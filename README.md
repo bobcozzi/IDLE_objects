@@ -1,10 +1,10 @@
 # IDLE_objects
-Find old/unused objects on IBM i
-NOTE: This can be a very long running process if you 
-specify *ALL/*ALL for the library and object name.
-First, use it over a single library. Then if it works for you,
-run it over *ALLUSR or even a generic lirary name, BUT! submit it
-to batch. 
+# Find old/unused objects on IBM i
+# NOTE: This can be a very long running process if you 
+# specify *ALL/*ALL for the library and object name.
+# First, use it over a single library. Then if that looks good,
+# run it over *ALLUSR or even a generic lirary name, BUT! submit it to batch.
+
      -- ----------------------------------------------------------------
      -- Description: List Old/Unsused ("Idle") Objects
      -- Alt Title:   List Old Objects
