@@ -99,7 +99,9 @@ R: BEGIN
        -- (b) check for special values
        -- (c) assign the proper control values to
        --     the library fields.
-     if (POSITION('*', R.LIB_NAME) > 1) THEN
+     if (R.LIB_NAME IN ('*LIBL','*CURLIB','*USRLIBL')) THEN
+       set  R.LIB_LIB = 'QSYS';
+     elseif (POSITION('*', R.LIB_NAME) > 1) THEN
         set R.LIB_NAME = Replace(R.LIB_NAME,'*','%');
         set R.LIB_LIB = '*ALLSIMPLE';
         set R.LIB_GEN = 1;
@@ -191,11 +193,18 @@ R: BEGIN
      return
        WITH LIBS(LIBNAME) as
        (      -- Build the list of libraries based on the LIBRARY_NAME parm.
+         select R.LIB_NAME
+         FROM sysibm.sysdummy1
+         WHERE R.LIB_NAME IN ('*LIBL','*CURLIB','*USRLIBL')
+        union
         select LL.OBJNAME
           FROM TABLE ( object_statistics(R.LIB_LIB, '*LIB', R.LIB_NAME) ) LL
-          WHERE ((R.LIB_GEN = 1 and LL.OBJNAME LIKE R.LIB_NAME) or
+          WHERE R.LIB_NAME NOT IN ('*LIBL','*CURLIB','*USRLIBL') AND
+               (
+                ((R.LIB_GEN = 1 and LL.OBJNAME LIKE R.LIB_NAME) or
                  R.LIB_GEN=0)
-                and LEFT(LL.OBJNAME, 1) NOT IN ('Q','#','$')
+                 and LEFT(LL.OBJNAME, 1) NOT IN ('Q','#','$')
+               )
        )
        select   -- Select "old" objects from the libraries
          od.objlib,
@@ -222,7 +231,7 @@ R: BEGIN
          END IDLE_MONTHS,  -- The result is the idle period
           -- If you are on V7R3 and the Created-on System name is useful,
           -- then include these two additional columns that are
-          -- available from OBJECT_STATISTICS in V7R3+ but not available on V7R2
+          -- not available on V7R2
        --   OD.CREATED_SYSTEM ,
        --   OD.CREATED_SYSTEM_VERSION,
 
@@ -235,9 +244,8 @@ R: BEGIN
          LATERAL (SELECT *
            FROM TABLE (object_Statistics(LL.LIBNAME, R.OBJ_TYPE)) D
            WHERE  D.OBJNAME LIKE coalesce(R.OBJ_NAME,D.OBJNAME) AND
-                ((D.last_used_timestamp is NULL and R.UNUSED = 1) or
-                MONTHS_BETWEEN(current_timestamp,
-                               D.last_used_timestamp) > R.MONTHSOLD)
+                ( (D.last_used_timestamp is NULL and R.UNUSED = 1) or
+                  D.Last_used_timestamp < current_date - R.MONTHSOLD months)
        ) OD;
 
 end;
@@ -249,11 +257,8 @@ comment on specific function sqltools.Z_LISTOLD IS
 'This UDTF returns a list of object that have not been used
 for at least the period specified (in months) on the PERIOD parameter.
 These are referred to as <i>idle objects</i>.
-It optionally includes objects that have never been used.
-These are referred to as <i>unused objects</i>.
-<p>It is part of SQL Tools for IBM i (c) 2021-2023 by R. Cozzi. Jr.
-All rights reserved.';
-
+It optionally also includes objects that have never been used.
+These are referred to as <i>unused objects</i>.';
 
 comment on parameter specific function sqltools.Z_LISTOLD
 (
