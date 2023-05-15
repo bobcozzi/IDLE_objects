@@ -26,7 +26,7 @@
      -- ----------------------------------------------------------------
 
  CREATE or REPLACE FUNCTION sqltools.OLDOBJ_LIST(
-                            LIBRARY_NAME varchar(10)  default '*ALLUSR',
+                            LIBRARY_NAME varchar(10)  default '*USRLIBL',
                             OBJECT_NAME  varchar(10)  default '*ALL',
                             OBJTYPE      varchar(812) default NULL,
                             PERIOD       int          default 24,
@@ -180,13 +180,13 @@ R: BEGIN
      end if;
 
      -- The following is for debug purposes only.
-     -- call sqlTools.sndmsg('Lib: ' concat rTrim(R.LIB_LIB) concat
-     --                  ' LibName: ' concat rTrim(R.LIB_NAME) concat
-     --                  ' GenLib: ' concat R.LIB_GEN concat
-     --                  ' objtype: ' concat rTrim(R.OBJ_TYPE) concat
-     --                  ' objName: ' concat rTrim(R.OBJ_NAME) concat
-     --                  ' unused: ' concat R.UNUSED  concat
-     --                  ' age: ' concat R.MONTHSOLD);
+      call sqlTools.sndmsg('Lib: ' concat rTrim(R.LIB_LIB) concat
+                       ' LibName: ' concat rTrim(R.LIB_NAME) concat
+                       ' GenLib: ' concat R.LIB_GEN concat
+                       ' objtype: ' concat rTrim(R.OBJ_TYPE) concat
+                       ' objName: ' concat rTrim(R.OBJ_NAME) concat
+                       ' unused: ' concat R.UNUSED  concat
+                       ' age: ' concat R.MONTHSOLD);
 
      -- The Returned Table uses the an SQL CTE and SELECT stmt
      -- to produces the result via a LATERAL join OBJECT_STATISTICS
@@ -270,7 +270,12 @@ may be used:<ul>
 <li>*ALLAVL - All libraries in all available ASPs</li>
 <li>*ALLUSR - All user libraries in ASP(*SYSBAS)</li>
 <li>*ALLUSRAVAL - All user libraries in all ASPs</li>
-</ul>',
+<li>*LIBL - The libraries on the job''s library list</li>
+<li>*CURLIB - The job''s current library</li>
+<li><u>*USRLIBL</u> - The libraries on the user-portion of the
+ the job''s library list. This is the default.</li>
+</ul>Significant performance improvement can be observed when using
+*LIBL, *CURLIB, *USRLIBL or a specific library name.',
 
 OBJECT_NAME is 'An object name, generic, full, or *ALL to be returned.
 Only objects whose name matches this parameter are returned. The default
