@@ -42,7 +42,7 @@
                  OBJCREATOR VARCHAR(10), -- Object created by User profile
                  CRTDATE    DATE,        -- Object creation date
                  LASTUSEDDATE DATE,      -- Object last-used date
-                 UNUSED_MONTHS VARCHAR(10),  -- Idle period (in months)
+                 IDLE_MONTHS VARCHAR(10),  -- Idle period (in months)
        -- If you are on V7R3 or later, you may want to
        -- include these two additional columns that are
        -- NOT available on V7R2:
@@ -94,20 +94,12 @@ R: BEGIN
        set R.LIB_NAME = strip(LIBRARY_NAME,L, ' ');  -- %TRIML()
      end if;
 
-       -- If library name is generic or full name, then we
-       -- (a) check for a generic name
-       -- (b) check for special values
-       -- (c) assign the proper control values to
-       --     the library fields.
-     if (R.LIB_NAME IN ('*LIBL','*CURLIB','*USRLIBL')) THEN
+     if (LEFT(R.LIB_NAME,1) = '*') THEN
        set  R.LIB_LIB = 'QSYS';
      elseif (POSITION('*', R.LIB_NAME) > 1) THEN
         set R.LIB_NAME = Replace(R.LIB_NAME,'*','%');
         set R.LIB_LIB = '*ALLSIMPLE';
         set R.LIB_GEN = 1;
-     elseif (LEFT(R.LIB_NAME,1) = '*') THEN  -- Special *ALLxxx value?
-       set  R.LIB_LIB = R.LIB_NAME;
-       set  R.LIB_NAME = '*ALLSIMPLE';
      else    -- Full library name?
        set  R.LIB_LIB = 'QSYS';
       -- set  R.LIB_NAME = R.LIB_NAME;  -- LIB_NAME stays as is
@@ -195,11 +187,11 @@ R: BEGIN
        (      -- Build the list of libraries based on the LIBRARY_NAME parm.
          select R.LIB_NAME
          FROM sysibm.sysdummy1
-         WHERE R.LIB_NAME IN ('*LIBL','*CURLIB','*USRLIBL')
+         WHERE LEFT(R.LIB_NAME,1) = '*'
         union
         select LL.OBJNAME
           FROM TABLE ( object_statistics(R.LIB_LIB, '*LIB', R.LIB_NAME) ) LL
-          WHERE R.LIB_NAME NOT IN ('*LIBL','*CURLIB','*USRLIBL') AND
+          WHERE LEFT(R.LIB_NAME,1) <> '*' and
                (
                 ((R.LIB_GEN = 1 and LL.OBJNAME LIKE R.LIB_NAME) or
                  R.LIB_GEN=0)
@@ -307,3 +299,4 @@ ON SPECIFIC FUNCTION SQLTOOLS.Z_LISTOLD TO PUBLIC;
 
 GRANT ALTER , EXECUTE
 ON SPECIFIC FUNCTION SQLTOOLS.Z_LISTOLD TO QSYS WITH GRANT OPTION ;
+ 
