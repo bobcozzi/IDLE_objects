@@ -1,6 +1,6 @@
 
 
-     -- List unused/idle objects (OLDOBJ_LIST) UDTF
+     -- List unused/idle objects (IDLE_OBJECTS) UDTF
      -- Returns a list of objects whose Last-Used date
      -- is at least as old as the "PERIOD" parameter.
      -- It may also include unused objects; those objects whose
@@ -26,7 +26,7 @@
      --              the original author is clearly credited.
      -- ----------------------------------------------------------------
 
- CREATE or REPLACE FUNCTION sqltools.OLDOBJ_LIST(
+ CREATE or REPLACE FUNCTION sqltools.IDLE_OBJECTS(
                             LIBRARY_NAME varchar(10)  default '*USRLIBL',
                             OBJECT_NAME  varchar(10)  default '*ALL',
                             OBJTYPE      varchar(812) default NULL,
@@ -58,7 +58,7 @@
      NO EXTERNAL ACTION
      NOT FENCED
      NOT DETERMINISTIC
-     SPECIFIC Z_LISTOLD
+     SPECIFIC Z_LISTIDLE
 
     -- Date Format ISO is required for dates prior to 1940.
      set option datfmt = *ISO, commit=*NONE
@@ -232,27 +232,35 @@ R: BEGIN
             -- to generate a list of objects in each library that matches
             -- the selection criteria (note the nested SELECT).
        FROM LIBS LL,
-         LATERAL (SELECT *
-           FROM TABLE (object_Statistics(LL.LIBNAME, R.OBJ_TYPE)) D
-           WHERE  D.OBJNAME LIKE coalesce(R.OBJ_NAME,D.OBJNAME) AND
-                ( (D.last_used_timestamp is NULL and R.UNUSED = 1) or
-                  D.Last_used_timestamp < current_date - R.MONTHSOLD months)
-                AND LEFT(D.OBJLONGSCHEMA,1) NOT IN ('#','$','Q')
+         LATERAL (SELECT D.*
+           FROM TABLE (object_Statistics(LL.LIBNAME,
+                                         R.OBJ_TYPE,'*ALLSIMPLE')) OL,
+            LATERAL( select D1.* from TABLE(OBJECT_STATISTICS(
+                               OL.OBJLONGSCHEMA,
+                               OL.OBJTYPE,
+                               OL.OBJNAME)) D1
+                WHERE ((D1.last_used_timestamp is NULL and R.UNUSED = 1) or
+                        D1.Last_used_timestamp <
+                              current_date - R.MONTHSOLD months) AND
+                       (OL.OBJNAME LIKE coalesce(R.OBJ_NAME,OL.OBJNAME))
+                ) D
+           WHERE  OL.OBJNAME LIKE coalesce(R.OBJ_NAME,OL.OBJNAME) AND
+                  LEFT(OD.OBJLONGSCHEMA,1) NOT IN ('#','$','Q')
        ) OD;
 
 end;
 
-LABEL on specific routine sqltools.Z_LISTOLD IS
+LABEL on specific routine sqltools.Z_LISTIDLE IS
 'Create list of idle/unused objects';
 
-comment on specific function sqltools.Z_LISTOLD IS
+comment on specific function sqltools.Z_LISTIDLE IS
 'This UDTF returns a list of object that have not been used
 for at least the period specified (in months) on the PERIOD parameter.
 These are referred to as <i>idle objects</i>.
-It optionally also includes objects that have never been used.
+It optionally also returns objects that have never been used.
 These are referred to as <i>unused objects</i>.';
 
-comment on parameter specific function sqltools.Z_LISTOLD
+comment on parameter specific function sqltools.Z_LISTIDLE
 (
 LIBRARY_NAME is 'The library whose objects are to be checked for
 the not used period of months specified on the PERIOD parameter,
@@ -295,8 +303,8 @@ specified on this parameter are included in the resultSet.',
 );
 
 GRANT EXECUTE
-ON SPECIFIC FUNCTION SQLTOOLS.Z_LISTOLD TO PUBLIC;
+ON SPECIFIC FUNCTION SQLTOOLS.Z_LISTIDLE TO PUBLIC;
 
 GRANT ALTER , EXECUTE
-ON SPECIFIC FUNCTION SQLTOOLS.Z_LISTOLD TO QSYS WITH GRANT OPTION ;
+ON SPECIFIC FUNCTION SQLTOOLS.Z_LISTIDLE TO QSYS WITH GRANT OPTION ;
  
