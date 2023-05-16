@@ -7,7 +7,7 @@
 
      -- ----------------------------------------------------------------
      -- Description: List Objects with old last used date
-     -- Alt Title:   List Idel (old/unused) Objects
+     -- Alt Title:   List Idle (old/unused) Objects
      -- Author:      R.Cozzi,Jr.
      -- Copyright:   (c) 2023 - R.Cozzi,Jr. All rights reserved.
      -- Rights assignment:
