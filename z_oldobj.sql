@@ -245,7 +245,7 @@ R: BEGIN
                        (OL.OBJNAME LIKE coalesce(R.OBJ_NAME,OL.OBJNAME))
                 ) D
            WHERE  OL.OBJNAME LIKE coalesce(R.OBJ_NAME,OL.OBJNAME) AND
-                  LEFT(OD.OBJLONGSCHEMA,1) NOT IN ('#','$','Q')
+                  LEFT(OL.OBJLONGSCHEMA,1) NOT IN ('#','$','Q')
        ) OD;
 
 end;
