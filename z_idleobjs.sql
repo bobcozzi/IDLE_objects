@@ -7,7 +7,7 @@
      -- Last-Used date is null (i.e., they have never been used).
 
      -- Objects that match the OBJECT_NAME, LIBRARY_NAME, and OBJTYPE
-     -- parameters are included (they default to *ALLUSR/*ALL *ALL).
+     -- parameters are included (they default to *USRLIBL/*ALL *ALL).
 
      -- The "OPTION" parameter may be used to also include objects
      -- that have never been used (i.e., last-used date is NULL).
