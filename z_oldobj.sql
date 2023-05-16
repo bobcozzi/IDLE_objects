@@ -190,16 +190,15 @@ R: BEGIN
          WHERE LEFT(R.LIB_NAME,1) = '*'
         union
         select LL.OBJNAME
-          FROM TABLE ( object_statistics(R.LIB_LIB, '*LIB', R.LIB_NAME) ) LL
-          WHERE LEFT(R.LIB_NAME,1) <> '*' and
+          FROM TABLE ( object_statistics(R.LIB_LIB, '*LIB','*ALLSIMPLE')) LL
+          WHERE LEFT(R.LIB_NAME,1) <> '*' AND
+                LEFT(LL.OBJNAME, 1) NOT IN ('Q','#','$') AND
                (
-                ((R.LIB_GEN = 1 and LL.OBJNAME LIKE R.LIB_NAME) or
-                 R.LIB_GEN=0)
-                 and LEFT(LL.OBJNAME, 1) NOT IN ('Q','#','$')
+               ((R.LIB_GEN=1 and LL.OBJNAME LIKE R.LIB_NAME) or R.LIB_GEN=0)
                )
        )
        select   -- Select "old" objects from the libraries
-         od.objlib,
+         left(od.objlongSchema,10) as OBJLIB,
          od.objname,
          od.objtype,
          od.objAttribute as objAttr,
@@ -221,9 +220,8 @@ R: BEGIN
             MONTHS_BETWEEN(current_timestamp, od.last_used_timestamp) AS
                    DEC(7, 1)) AS VARCHAR(10)), 10)
          END IDLE_MONTHS,  -- The result is the idle period
-          -- If you are on V7R3 and the Created-on System name is useful,
-          -- then include these two additional columns that are
-          -- not available on V7R2
+          -- If you are on V7R3 or later you may also include
+          -- these two columns if desired.
        --   OD.CREATED_SYSTEM ,
        --   OD.CREATED_SYSTEM_VERSION,
 
@@ -238,8 +236,7 @@ R: BEGIN
            WHERE  D.OBJNAME LIKE coalesce(R.OBJ_NAME,D.OBJNAME) AND
                 ( (D.last_used_timestamp is NULL and R.UNUSED = 1) or
                   D.Last_used_timestamp < current_date - R.MONTHSOLD months)
-       ) OD;
-
+       ) OD; 
 end;
 
 LABEL on specific routine sqltools.Z_LISTOLD IS
