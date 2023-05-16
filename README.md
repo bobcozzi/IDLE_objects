@@ -3,7 +3,7 @@
 # NOTE: If you specify *ALL/*ALL for the library and object name
 # this will be a long running process depending on the system size.
 # I recommend first using it over a single library or a generic library. 
-# Then if, that looks good, run it over *ALLUSR or similar.
+# Then if that looks good, run it over *ALLUSR or similar.
 
      -- ----------------------------------------------------------------
      -- Description: List Old/Unsused ("Idle") Objects
