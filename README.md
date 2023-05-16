@@ -6,8 +6,8 @@
 # Then if that looks good, run it over *ALLUSR or similar.
 
      -- ----------------------------------------------------------------
-     -- Description: List Old/Unsused ("Idle") Objects
-     -- Alt Title:   List Old Objects
+     -- Description: List Objects with old last used date
+     -- Alt Title:   List Idel (old/unused) Objects
      -- Author:      R.Cozzi,Jr.
      -- Copyright:   (c) 2023 - R.Cozzi,Jr. All rights reserved.
      -- Rights assignment:
