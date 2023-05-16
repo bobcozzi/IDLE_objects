@@ -1,4 +1,5 @@
 
+
      -- List unused/idle objects (OLDOBJ_LIST) UDTF
      -- Returns a list of objects whose Last-Used date
      -- is at least as old as the "PERIOD" parameter.
@@ -95,14 +96,13 @@ R: BEGIN
      end if;
 
      if (LEFT(R.LIB_NAME,1) = '*') THEN
-       set  R.LIB_LIB = 'QSYS';
+        set R.LIB_LIB = R.LIB_NAME;
      elseif (POSITION('*', R.LIB_NAME) > 1) THEN
         set R.LIB_NAME = Replace(R.LIB_NAME,'*','%');
         set R.LIB_LIB = '*ALLSIMPLE';
         set R.LIB_GEN = 1;
-     else    -- Full library name?
-       set  R.LIB_LIB = 'QSYS';
-      -- set  R.LIB_NAME = R.LIB_NAME;  -- LIB_NAME stays as is
+     else   -- For a full library name, we don't use OBJSTATS so
+       set R.LIB_LIB = R.LIB_NAME;   -- force empty library list
      end if;
 
        -- The OPTION parameter indicates what to include
@@ -172,13 +172,13 @@ R: BEGIN
      end if;
 
      -- The following is for debug purposes only.
-      call sqlTools.sndmsg('Lib: ' concat rTrim(R.LIB_LIB) concat
-                       ' LibName: ' concat rTrim(R.LIB_NAME) concat
-                       ' GenLib: ' concat R.LIB_GEN concat
-                       ' objtype: ' concat rTrim(R.OBJ_TYPE) concat
-                       ' objName: ' concat rTrim(R.OBJ_NAME) concat
-                       ' unused: ' concat R.UNUSED  concat
-                       ' age: ' concat R.MONTHSOLD);
+     -- call sqlTools.sndmsg('Lib: ' concat rTrim(R.LIB_LIB) concat
+     --        ' LibName: ' concat coalesce(rTrim(R.LIB_NAME),'*NULL') concat
+     --        ' GenLib: '  concat R.LIB_GEN concat
+     --        ' objtype: ' concat coalesce(rTrim(R.OBJ_TYPE),'*ALL') concat
+     --        ' objName: ' concat coalesce(rTrim(R.OBJ_NAME),'*ALL') concat
+     --        ' unused: '  concat R.UNUSED  concat
+     --        ' age: '     concat R.MONTHSOLD);
 
      -- The Returned Table uses the an SQL CTE and SELECT stmt
      -- to produces the result via a LATERAL join OBJECT_STATISTICS
@@ -186,19 +186,20 @@ R: BEGIN
        WITH LIBS(LIBNAME) as
        (      -- Build the list of libraries based on the LIBRARY_NAME parm.
          select R.LIB_NAME
-         FROM sysibm.sysdummy1
-         WHERE LEFT(R.LIB_NAME,1) = '*'
+           FROM sysibm.sysdummy1
+           WHERE POSITION('*',R.LIB_NAME) <= 1 and
+                 POSITION('%',R.LIB_NAME) = 0
         union
         select LL.OBJNAME
           FROM TABLE ( object_statistics(R.LIB_LIB, '*LIB','*ALLSIMPLE')) LL
-          WHERE LEFT(R.LIB_NAME,1) <> '*' AND
+          WHERE POSITION('%',R.LIB_NAME) > 0 AND
                 LEFT(LL.OBJNAME, 1) NOT IN ('Q','#','$') AND
                (
                ((R.LIB_GEN=1 and LL.OBJNAME LIKE R.LIB_NAME) or R.LIB_GEN=0)
                )
        )
        select   -- Select "old" objects from the libraries
-         left(od.objlongSchema,10) as OBJLIB,
+         left(od.OBJLONGSCHEMA,10) as OBJLIB,
          od.objname,
          od.objtype,
          od.objAttribute as objAttr,
@@ -236,7 +237,9 @@ R: BEGIN
            WHERE  D.OBJNAME LIKE coalesce(R.OBJ_NAME,D.OBJNAME) AND
                 ( (D.last_used_timestamp is NULL and R.UNUSED = 1) or
                   D.Last_used_timestamp < current_date - R.MONTHSOLD months)
-       ) OD; 
+                AND LEFT(D.OBJLONGSCHEMA,1) NOT IN ('#','$','Q')
+       ) OD;
+
 end;
 
 LABEL on specific routine sqltools.Z_LISTOLD IS
